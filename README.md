@@ -1,7 +1,9 @@
 # Consistency Policy
 
-<center><em>TLDR Consistency Policy achieves high accuracy with <br>2-step inference in cases where Diffusion Policy fails.<br> Nevertheless, Diffusion Policy with a DDIM solver does <br> well enough in many other cases.</em></center>
-<center><img src="consistency_policy/figures/consistency_policy.gif" width=300></center>
+<p align="center"><em>TLDR Consistency Policy achieves high accuracy with <br>2-step inference in cases where Diffusion Policy fails.<br> Nevertheless, Diffusion Policy with a DDIM solver does <br> well enough in many other cases.</em></p>
+
+<p align="center"><img src="consistency_policy/figures/consistency_policy.gif" width=300>
+</p>
 
 &nbsp;
 
