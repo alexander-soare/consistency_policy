@@ -138,3 +138,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Alex
+venv
+consistency_policy/outputs
+pyproject.toml

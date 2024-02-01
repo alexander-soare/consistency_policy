@@ -1,0 +1,167 @@
+defaults:
+  - _self_
+  - train_diffusion_unet_lowdim_workspace
+
+# name: train_consistency_unet_lowdim
+# _target_: consistency_policy.train_consistency_unet_lowdim_workspace.TrainConsistencyUnetLowdimWorkspace
+
+# # ???
+# obs_dim: ${task.obs_dim}
+# action_dim: ${task.action_dim}
+# keypoint_dim: ${task.keypoint_dim}
+# task_name: ${task.name}
+# exp_name: "default"
+
+# horizon: 16
+# keypoint_visible_rate: 1.0
+# obs_as_global_cond: false
+# obs_as_local_cond: false
+# past_action_visible: false
+# pred_action_steps_only: false
+
+
+
+# # WandB logging.
+# use_wandb: false
+# logging:
+#   project: consistency_policy_debug
+#   resume: True
+#   mode: online
+#   name: ${now:%Y.%m.%d-%H.%M.%S}_${name}_${task_name}
+#   tags: ["${name}", "${task_name}", "${exp_name}"]
+#   id: null
+#   group: null
+
+# # Environment.
+# # action_dim: 2  # TODO is this needed?
+# task:
+#   action_dim: 2
+#   dataset:
+#     _target_: diffusion_policy.dataset.pusht_dataset.PushTLowdimDataset
+#     horizon: 16
+#     max_train_episodes: 90
+#     pad_after: 7
+#     pad_before: 1
+#     seed: 42
+#     val_ratio: 0.02
+#     zarr_path: data/pusht/pusht_cchi_v7_replay.zarr
+#   env_runner:
+#     _target_: diffusion_policy.env_runner.pusht_keypoints_runner.PushTKeypointsRunner
+#     agent_keypoints: false
+#     fps: 10
+#     keypoint_visible_rate: 1.0
+#     legacy_test: true
+#     max_steps: 300
+#     n_action_steps: 8
+#     n_envs: null
+#     n_latency_steps: 0
+#     n_obs_steps: 2
+#     n_test: 50
+#     n_test_vis: 4
+#     n_train: 6
+#     n_train_vis: 2
+#     past_action: false
+#     test_start_seed: 100000
+#     train_start_seed: 0
+#   keypoint_dim: 2
+#   name: pusht_lowdim
+#   obs_dim: 20
+
+# # Agent.
+# n_action_steps: 8
+# n_latency_steps: 0
+# n_obs_steps: 2
+
+# # Data loaders.
+# dataloader:
+#   batch_size: 256
+#   num_workers: 1
+#   persistent_workers: false
+#   pin_memory: true
+#   shuffle: true
+# val_dataloader:
+#   batch_size: 256
+#   num_workers: 1
+#   persistent_workers: false
+#   pin_memory: true
+#   shuffle: false
+
+# # Modelling.
+# policy:
+#   _target_: diffusion_policy.policy.diffusion_unet_lowdim_policy.DiffusionUnetLowdimPolicy
+
+#   model:
+#     _target_: diffusion_policy.model.diffusion.conditional_unet1d.ConditionalUnet1D
+#     input_dim: "${eval: ${task.action_dim} if ${obs_as_local_cond} or ${obs_as_global_cond} else ${task.obs_dim} + ${task.action_dim}}"
+#     local_cond_dim: "${eval: ${task.obs_dim} if ${obs_as_local_cond} else None}"
+#     global_cond_dim: "${eval: ${task.obs_dim}*${n_obs_steps} if ${obs_as_global_cond} else None}"
+#     diffusion_step_embed_dim: 256
+#     down_dims: [256, 512, 1024]
+#     kernel_size: 5
+#     n_groups: 8
+#     cond_predict_scale: True
+
+#   noise_scheduler:
+#     _target_: diffusers.schedulers.scheduling_ddpm.DDPMScheduler
+#     num_train_timesteps: 100
+#     beta_start: 0.0001
+#     beta_end: 0.02
+#     beta_schedule: squaredcos_cap_v2
+#     variance_type: fixed_small # Yilun's paper uses fixed_small_log instead, but easy to cause Nan
+#     clip_sample: True # required when predict_epsilon=False
+#     prediction_type: epsilon # or sample
+
+#   horizon: ${horizon}
+#   obs_dim: ${obs_dim}
+#   action_dim: ${action_dim}
+#   n_action_steps: ${eval:'${n_action_steps}+${n_latency_steps}'}
+#   n_obs_steps: ${n_obs_steps}
+#   num_inference_steps: 100
+#   obs_as_local_cond: ${obs_as_local_cond}
+#   obs_as_global_cond: ${obs_as_global_cond}
+#   pred_action_steps_only: ${pred_action_steps_only}
+#   oa_step_convention: True
+
+# # Training.
+# training:
+#   checkpoint_every: 50
+#   debug: false
+#   device: cuda:0
+#   gradient_accumulate_every: 1
+#   lr_scheduler: cosine
+#   lr_warmup_steps: 500
+#   max_train_steps: null
+#   max_val_steps: null
+#   num_epochs: 5000
+#   resume: true
+#   rollout_every: 50
+#   sample_every: 5
+#   seed: 42
+#   tqdm_interval_sec: 1.0
+#   val_every: 1
+# optimizer:
+#   _target_: torch.optim.AdamW
+#   betas:
+#     - 0.95
+#     - 0.999
+#   eps: 1.0e-08
+#   lr: 0.0001
+#   weight_decay: 1.0e-06
+# ema:
+#   _target_: diffusion_policy.model.diffusion.ema_model.EMAModel
+#   inv_gamma: 1.0
+#   max_value: 0.9999
+#   min_value: 0.0
+#   power: 0.75
+#   update_after_step: 0
+# checkpoint:
+#   save_last_ckpt: true
+#   save_last_snapshot: false
+#   topk:
+#     format_str: epoch={epoch:04d}-test_mean_score={test_mean_score:.3f}.ckpt
+#     k: 5
+#     mode: max
+#     monitor_key: test_mean_score
+# # multi_run:
+# #   run_dir: data/outputs/2023.01.16/20.10.02_train_diffusion_unet_lowdim_pusht_lowdim
+# #   wandb_name_base: 2023.01.16-20.10.02_train_diffusion_unet_lowdim_pusht_lowdim

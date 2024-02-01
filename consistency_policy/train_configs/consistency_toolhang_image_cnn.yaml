@@ -1,0 +1,71 @@
+defaults:
+  - diffusion_toolhang_image_cnn
+  - _self_
+
+_target_: consistency_policy.train_consistency_unet_workspace.TrainConsistencyUnetWorkspace
+name: train_consistency_unet
+
+use_wandb: false
+logging:
+  project: consistency_policy_debug
+  resume: True
+  mode: online
+  name: ${now:%Y.%m.%d-%H.%M.%S}_${name}_${task_name}
+  tags: ["${name}", "${task_name}", "${exp_name}"]
+  id: null
+  group: null
+
+# If doing consistency distillation, most things here should be left to inherit from the diffusion config.
+policy:
+  _target_: consistency_policy.consistency_model.ConsistencyUnetPolicy
+  policy_type: "hybrid"
+  eval_step_size: 50
+  # This should be 1 or if not doing consistency distillation because we are bootstrapping. TODO: another possibility
+  # is to randomly select skip_steps in [1, max_skip_steps] for every training sample.
+  skip_steps: 10
+  noise_scheduler:
+    # Either "epsilon" or "sample"._
+    prediction_type: epsilon
+    clip_sample: false
+
+training:
+  num_epochs: 200
+  lr_warmup_steps: 1000
+  rollout_every: 25
+  checkpoint_every: 25
+  val_every: 5
+  # Recommended to set this to true for vanilla consistency training.
+  do_consistency_training_warmup: false
+  # Set to null to do vanilla consistency training. If null, do_distill must be false.
+  # teacher_checkpoint: null
+  teacher_checkpoint: data/toolhang-image_2650-test_mean_score=1.000.ckpt
+  # If this is true, the teacher is used in consistency distillation, otherwise the teacher (if provided) is just used
+  # to initialize the consistency model weights for vanilla consistency distillation.
+  do_distill: true
+  lr_scheduler: cosine
+  # If using consistency training warmup, this should be relatively low, as the warmup schedule causes it to approach 1.
+  # It might be best to run a training run with few epochs to calibrate.
+  ema_rate: 0.999
+  # Whether the target network should be the EMA model. iCM suggests this is unnecessary for consistency
+  # distillation and detrimental for consistency training.
+  use_ema_target: false
+  timestep_sampler:
+    _target_: consistency_policy.samplers.LossEMAResampler
+    alpha: 0.99
+    uniform_prob: 0.1
+    num_strata: 64
+
+optimizer:
+  _target_: torch.optim.RAdam
+  lr: 1e-4
+  weight_decay: 0
+
+dataloader:
+  num_workers: 10
+  batch_size: 64
+  persistent_workers: false
+
+val_dataloader:
+  num_workers: 10
+  batch_size: 64
+  persistent_workers: false
