@@ -33,8 +33,16 @@ I admit I got rather excited when I saw the "PushT Lowdim" plot, but then disapp
 
 Just for fun, the GIF at the top of this README shows rollouts for the extreme case in which we only apply 2 forward passes of each network, for the "Lowdim" variants (no surprises here given the plots above, animations are just prettier).
 
-Recall that the key difference between "PushT Lowdim" and the other experiments is that it incorporates the observations as inpainting rather than as neural network conditioning inputs.
- 
+### Why does DDIM do so well? (my speculations)
+
+Recall that the key difference between "PushT Lowdim" (which provided the biggest gap between Consistency Policy and Diffusion Policy) and the other experiments is that it incorporates the observations as inpainting rather than as neural network conditioning inputs.
+
+In general, I suspect [DDIM](https://arxiv.org/abs/2010.02502) does well in these settings because the target probability distribution over trajectories often becomes uni-modal and very narrow when conditioning is incorporated. Recall that in the experiments where we provide conditioning to the denoising network, we are modelling `P(x(0) | x(T), c)`  where `x(0)` represents a clean trajectory, `x(T)` is a pure gaussian noise and `c` is the observation as conditioning. In tasks like caption-conditioned image generation, this distribution is still (very, very) highly multi-modal. But in tasks like the experiments in [Diffusion Policy](https://arxiv.org/abs/2303.04137), once a condition is provided, there are only 1 or a few ways the trajectory ought to go. Consider for example "Transport" at the point where one of the robot arms has the hammer. There's only one clear path forward: move the arms together. 
+
+![](consistency_policy/figures/move_arms_together.png)
+
+DDPM's are trained on the MSE between the neural network's output and the ground truth. In the scenario depicted above, even given a fully noised trajectory `x(T)`, the only reasonable things for the DDPM training procedure to learn is to directly predict the mean of all the training data in such a scenario: ie the arms moving together. I don't think this argument only works for the uni-modal case. Adding extra modes likely just means an extra DDIM step is needed to break the ambiguity. That's about as far as I'm willing to reach with my speculations for the time being... hopefully I'll get the chance to put these ideas to the test.
+
 ## Methods
 
 The code is the best source of truth for what I did but I can give an overview of the key points here.
