@@ -85,7 +85,7 @@ def eval(
 @click.option("--n-train-vis", type=int, default=0)
 @click.option("--n-test", type=int, default=50)
 @click.option("--n-test-vis", type=int, default=0)
-@click.option("--test-start-seed", type=int, default=0)
+@click.option("--test-start-seed", type=int, default=100000)
 def main(
     checkpoint,
     output_dir,

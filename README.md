@@ -9,7 +9,7 @@
 
 [Diffusion Policy](https://arxiv.org/abs/2303.04137) makes use of diffusion models to generate action trajectories for robots. This involves sampling pure noise and progressively "denoising" it into a feasible trajectory via multiple forward passes through a neural network. Depending on the latency requirements of the application, and the size/complexity of the neural network, the number of forward passes can become a latency bottleneck. One can get away with less forward passes, but at some point this becomes a trade-off between speed and accuracy.
 
-In this project, I tried distilling the denoising neural networks from the [Diffusion Policy](https://arxiv.org/abs/2303.04137) work into [consistency models](https://arxiv.org/abs/2303.01469) in order to answer the question. **Can we get a more favorable trade-off between speed and accuracy?** Spoiler alert: we can, but on many of the simulated environments in [Diffusion Policy](https://arxiv.org/abs/2303.04137), ODE solvers like [DDIM](https://arxiv.org/abs/2010.02502) already work very well.
+In this project, I tried distilling the denoising neural networks from the [Diffusion Policy](https://arxiv.org/abs/2303.04137) work into [consistency models](https://arxiv.org/abs/2303.01469) in order to answer the question. **Can we get a more favorable trade-off between speed and accuracy?** Spoiler alert: we can, but on many of the simulated environments in [Diffusion Policy](https://arxiv.org/abs/2303.04137), algorithms like [DDIM](https://arxiv.org/abs/2010.02502) (a training-free method for few step inference with a pretrained diffusion model) already work very well.
 
 A note on this repository: this is a fork of the [original Diffusion Policy work](https://github.com/real-stanford/diffusion_policy). I've made full use of their boiler-plate and I've made as little changes as possible to their code. 99% of my work is in the `consistency_policy` folder (and even there, the starter code is from the original work). If you want to try running this code, you may want to check out [consistency_policy/SETUP_AND_USAGE.md](.consistency_policy/SETUP_AND_USAGE.md).
 
@@ -28,6 +28,8 @@ These plots (_see [Methods](#methods) for more details on how they were made_) s
 - *Unlike [Diffusion Policy](https://arxiv.org/abs/2303.04137)'s experiments, I don't use 3 training seeds due to resource/time constraints. Nevertheless, I found that the variability within a training seed is as much as the variability between training seeds when evaluating the original [Diffusion Policy](https://arxiv.org/abs/2303.04137) models.*
 - *For evaluating the [Diffusion Policy](https://arxiv.org/abs/2303.04137) work, I use the [DDIM](https://arxiv.org/abs/2010.02502) algorithm for inference. I use the neural network weights that were used as the teacher for the the consistency model featured on the same plot.*
 - *The bottom axis shows number of inference steps. For any given number of inference steps I use a linear step schedule. Here's an example. Suppose I want to do inference in 3 steps. The model was trained with 100 noise levels. I set my step size to `ceil(100 / 3) = 34`. Then the steps look like `100 -> 66 -> 32 -> 0`.*
+- *PushT experiments have a variable score in [0, 1]. Therefore I used a straight mean for the points, and a single standard deviation for the error bars (probably an overestimation on the error because they don't account for the restricted domain). For any other experiments the score is discrete in {0, 1}. Therefore I use a beta distribution with a uniform prior and plot the expectation value for the point and use a 68.1% confidence interval for the error bars.*
+- ***Edit: 2024/02/03**: I redid the plots as I realized I may have generated them with training seeds for the environment initializations. The changes were minor and had no bearing on the rest of the discussion.*
 
 I admit I got rather excited when I saw the "PushT Lowdim" plot, but then disappointed seeing the rest. I also tried "Transport Image" and "Toolhang Image" but quickly realized that DDIM works very well for those all the way out to 2-step inference (I didn't carry on with these as they are computationaly much heavier for training and evalutation).
 
@@ -49,7 +51,7 @@ The code is the best source of truth for what I did but I can give an overview o
 
 ### Inference
 
-For inference, I follow Algorithm 2 of [CM](https://arxiv.org/abs/2303.01469). The only differences are:
+For inference, I follow Algorithm 1 of [CM](https://arxiv.org/abs/2303.01469). The only differences are:
 
 - I pass the conditioning (where applicable) to the neural network as well.
 - Algorithm 4 shows how to incorporate inpainting, but there they do `denoise -> inpaint -> renoise` whereas **I do `inpaint -> denoise -> renoise`. This variant is crucial** to good results (I spent a long time wondering why it looked like my agent was not respecting the initial observations). In fact, "my" variant is more in line with what one would do with [DDPM](https://arxiv.org/abs/2006.11239) or [DDIM](https://arxiv.org/abs/2010.02502), and I somewhat suspect there's an error in Algorithm 4.
@@ -72,7 +74,7 @@ For the teacher network, for each task I picked the highest scoring model from t
 
 - More environments. On my machine, "Toolhang Image" took around 5 minutes to train per epoch and 22 minutes to evaluate just 50 rollouts. 
 - Vanilla consistency training (there's support in the code to try this but I didn't take the time to get it working well).
-- Using a Heun solver during training. Or using other ODE solver algorithms like [DPM](https://arxiv.org/abs/2206.00927).
+- Using a Heun solver with DDIM during training. Or using alternatives to DDIM like like [DPM](https://arxiv.org/abs/2206.00927).
 - Transformer based policies. I felt confident enough they would yield similar conclusions.
 - Ternary search for better denoising schedules at inference time (I just used a linear schedule).
 

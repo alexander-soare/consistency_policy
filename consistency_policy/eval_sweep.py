@@ -78,7 +78,7 @@ def plot_results(results_dct: dict, title: str = ""):
 @click.option("-d", "--device", default="cuda:0")
 @click.option("--n-test", type=int, default=50)
 @click.option("--n-chunks", type=int, default=1)
-@click.option("--test-start-seed", type=int, default=0)
+@click.option("--test-start-seed", type=int, default=100000)
 @click.option("--eval-step-sizes", type=str, required=True, help="pass as a comma seperated list of numbers")
 def eval_sweep(results_json, checkpoint, output_dir, device, n_test, n_chunks, test_start_seed, eval_step_sizes):
     results_dct = {"checkpoint": checkpoint, "n_test": n_test, "test_start_seed": test_start_seed, "ddim": {}, "cm": {}}
